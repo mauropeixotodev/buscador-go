@@ -9,32 +9,38 @@ import (
 
 func main() {
 	start := time.Now()
-	var price1, price2, price3 float64
+	priceChannel := make(chan float64)
 
 	wg := sync.WaitGroup{}
 	wg.Add(3)
 	go func() {
-		defer wg.Done()
-		price1 := fetcher.FetchPricersSite1()
-		fmt.Printf("Price 1: %f\n", price1)
+		var totalPrice float64
+		var count int
+		for price := range priceChannel {
+			totalPrice += price
+			count++
+			fmt.Printf("Price: %f\n", price)
+			fmt.Printf("Average price until now: %f\n", totalPrice/float64(count))
+		}
+		//fmt.Printf("Total price: %f\n", totalPrice)
+		//fmt.Printf("Average price: %f\n", totalPrice/float64(count))
+	}()
 
+	go func() {
+		defer wg.Done()
+		priceChannel <- fetcher.FetchPricersSite1()
 	}()
 	go func() {
 		defer wg.Done()
-		price2 := fetcher.FetchPricersSite2()
-		fmt.Printf("Price 2: %f\n", price2)
+		priceChannel <- fetcher.FetchPricersSite2()
 	}()
 	go func() {
 		defer wg.Done()
-		price3 := fetcher.FetchPricersSite3()
-		fmt.Printf("Price 3: %f\n", price3)
+		priceChannel <- fetcher.FetchPricersSite3()
 	}()
 	wg.Wait()
+	close(priceChannel)
 
 	fmt.Printf("Time taken: %s\n", time.Since(start))
-
-	fmt.Printf("Price 1: %f\n", price1)
-	fmt.Printf("Price 2: %f\n", price2)
-	fmt.Printf("Price 3: %f\n", price3)
 	fmt.Printf("Time taken: %s\n", time.Since(start))
 }
