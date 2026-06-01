@@ -2,6 +2,7 @@ package main
 
 import (
 	"buscador/internal/fetcher"
+	"buscador/internal/processor"
 	"fmt"
 	"sync"
 	"time"
@@ -11,19 +12,12 @@ func main() {
 	start := time.Now()
 	priceChannel := make(chan float64)
 
-	wg := sync.WaitGroup{}
+	wg, showWG := sync.WaitGroup{}, sync.WaitGroup{}
 	wg.Add(3)
+	showWG.Add(1)
 	go func() {
-		var totalPrice float64
-		var count int
-		for price := range priceChannel {
-			totalPrice += price
-			count++
-			fmt.Printf("Price: %f\n", price)
-			fmt.Printf("Average price until now: %f\n", totalPrice/float64(count))
-		}
-		//fmt.Printf("Total price: %f\n", totalPrice)
-		//fmt.Printf("Average price: %f\n", totalPrice/float64(count))
+		defer showWG.Done()
+		processor.ShowPrices(priceChannel)
 	}()
 
 	go func() {
@@ -40,6 +34,7 @@ func main() {
 	}()
 	wg.Wait()
 	close(priceChannel)
+	showWG.Wait()
 
 	fmt.Printf("Time taken: %s\n", time.Since(start))
 	fmt.Printf("Time taken: %s\n", time.Since(start))
