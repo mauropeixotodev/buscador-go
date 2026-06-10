@@ -4,37 +4,18 @@ import (
 	"buscador/internal/fetcher"
 	"buscador/internal/processor"
 	"fmt"
-	"sync"
 	"time"
 )
 
 func main() {
 	start := time.Now()
 	priceChannel := make(chan float64)
+	doneChannel := make(chan bool)
 
-	wg, showWG := sync.WaitGroup{}, sync.WaitGroup{}
-	wg.Add(3)
-	showWG.Add(1)
-	go func() {
-		defer showWG.Done()
-		processor.ShowPrices(priceChannel)
-	}()
+	go fetcher.FetchPricers(priceChannel)
+	go processor.ShowPrices(priceChannel, doneChannel)
 
-	go func() {
-		defer wg.Done()
-		priceChannel <- fetcher.FetchPricersSite1()
-	}()
-	go func() {
-		defer wg.Done()
-		priceChannel <- fetcher.FetchPricersSite2()
-	}()
-	go func() {
-		defer wg.Done()
-		priceChannel <- fetcher.FetchPricersSite3()
-	}()
-	wg.Wait()
-	close(priceChannel)
-	showWG.Wait()
+	<-doneChannel
 
 	fmt.Printf("Time taken: %s\n", time.Since(start))
 	fmt.Printf("Time taken: %s\n", time.Since(start))
